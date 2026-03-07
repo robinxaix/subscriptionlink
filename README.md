@@ -62,6 +62,12 @@ ADMIN_TOKEN=your-secret-token go run ./cmd/server
 <DATA_DIR>/admin.key
 ```
 
+可直接读取该密钥用于登录：
+
+```bash
+cat <DATA_DIR>/admin.key
+```
+
 启用 Xray 同步（推荐）：
 
 ```bash
@@ -193,7 +199,7 @@ make clean
 4. 后续写操作（`POST/PUT/DELETE`）需带 `X-CSRF-Token`
 5. 管理页每次打开默认进入登录页（不会自动跳过登录）
 
-未配置服务端 `ADMIN_TOKEN` 时，登录接口返回 `503`。
+说明：若未配置 `ADMIN_TOKEN`，服务启动时会自动生成并写入 `<DATA_DIR>/admin.key`，登录接口可正常使用。
 
 #### 登录与会话
 
@@ -346,6 +352,19 @@ curl "$BASE/api/subscription/<user-token>"
   `sync xray failed: xray inbound tag not found: <tag>`
 - `XRAY_RELOAD_CMD` 未设置时，默认执行：`sudo systemctl reload xray`
 - 若你不希望自动重载，可显式设置：`XRAY_RELOAD_CMD=""`
+
+## 启动参数与环境变量
+
+- `--listen_addr` / `LISTEN_ADDR`：监听地址，默认 `127.0.0.1:8081`
+- `--data_dir` / `DATA_DIR`：运行数据目录，默认 `data`
+- `--xray_config_path` / `XRAY_CONFIG_PATH`：Xray 配置路径，默认 `/usr/local/etc/xray/config.json`
+
+优先级：启动参数优先于环境变量。
+
+## 安全提示
+
+- `admin.key` 是管理员登录密钥文件，请不要提交到仓库。
+- 建议将 `DATA_DIR` 指向受控目录，并限制文件权限。
 
 ## 当前限制
 
