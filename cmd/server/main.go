@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,6 +13,7 @@ import (
 	"subscriptionlink/internal/api"
 	"subscriptionlink/internal/auth"
 	"subscriptionlink/internal/stats"
+	"subscriptionlink/internal/store"
 )
 
 type loginRequest struct {
@@ -24,10 +28,26 @@ type sessionResponse struct {
 func main() {
 	adminToken := os.Getenv("ADMIN_TOKEN")
 	secureCookie := strings.EqualFold(os.Getenv("ADMIN_COOKIE_SECURE"), "true")
-	listenAddr := os.Getenv("LISTEN_ADDR")
-	if listenAddr == "" {
-		listenAddr = "127.0.0.1:8081"
+	listenAddrFlag := flag.String("listen_addr", envOrDefault("LISTEN_ADDR", "127.0.0.1:8081"), "http listen address")
+	dataDirFlag := flag.String("data_dir", envOrDefault("DATA_DIR", "data"), "runtime data directory")
+	xrayConfigPathFlag := flag.String("xray_config_path", envOrDefault("XRAY_CONFIG_PATH", "/usr/local/etc/xray/config.json"), "xray config file path")
+	flag.Parse()
+
+	listenAddr := *listenAddrFlag
+	store.SetDataDir(*dataDirFlag)
+	if err := os.Setenv("XRAY_CONFIG_PATH", strings.TrimSpace(*xrayConfigPathFlag)); err != nil {
+		fmt.Printf("failed to set XRAY_CONFIG_PATH: %v\n", err)
+		os.Exit(1)
 	}
+	resolvedToken, generated, err := resolveAdminToken(adminToken)
+	if err != nil {
+		fmt.Printf("failed to resolve admin token: %v\n", err)
+		os.Exit(1)
+	}
+	if generated {
+		fmt.Printf("ADMIN_TOKEN not set, generated key saved to %s\n", store.DataFile("admin.key"))
+	}
+	adminToken = resolvedToken
 	authManager := auth.NewManager(adminToken, secureCookie)
 
 	mux := http.NewServeMux()
@@ -103,11 +123,53 @@ func main() {
 
 	handler := withSecurityHeaders(mux)
 
-	fmt.Printf("Subscription server running on %s\n", listenAddr)
+	fmt.Printf("Subscription server running on %s (data dir: %s)\n", listenAddr, store.DataDir())
 	if err := http.ListenAndServe(listenAddr, handler); err != nil {
 		fmt.Printf("server stopped: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func envOrDefault(key, fallback string) string {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
+func resolveAdminToken(raw string) (token string, generated bool, err error) {
+	if err := os.MkdirAll(store.DataDir(), 0o755); err != nil {
+		return "", false, err
+	}
+
+	trimmed := strings.TrimSpace(raw)
+	if trimmed != "" {
+		return trimmed, false, nil
+	}
+
+	token, err = randomUUID()
+	if err != nil {
+		return "", false, err
+	}
+	if err := os.WriteFile(store.DataFile("admin.key"), []byte(token+"\n"), 0o600); err != nil {
+		return "", false, err
+	}
+	return token, true, nil
+}
+
+func randomUUID() (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
+	return hex.EncodeToString(b[0:4]) + "-" +
+		hex.EncodeToString(b[4:6]) + "-" +
+		hex.EncodeToString(b[6:8]) + "-" +
+		hex.EncodeToString(b[8:10]) + "-" +
+		hex.EncodeToString(b[10:16]), nil
 }
 
 func withSecurityHeaders(next http.Handler) http.Handler {

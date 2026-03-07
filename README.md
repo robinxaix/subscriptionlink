@@ -50,10 +50,16 @@ echo '[]' > data/users.json
 echo '[]' > data/nodes.json
 ```
 
-2. 启动服务（必须设置管理后台登录密钥）
+2. 启动服务（推荐设置 `ADMIN_TOKEN`）
 
 ```bash
 ADMIN_TOKEN=your-secret-token go run ./cmd/server
+```
+
+如果未设置 `ADMIN_TOKEN`，服务会自动生成一个 UUID 作为管理员密钥，并写入：
+
+```text
+<DATA_DIR>/admin.key
 ```
 
 启用 Xray 同步（推荐）：
@@ -63,6 +69,24 @@ ADMIN_TOKEN=your-secret-token \
 XRAY_CONFIG_PATH=data/xray.config \
 XRAY_RELOAD_CMD="" \
 go run ./cmd/server
+```
+
+`XRAY_CONFIG_PATH` 默认值为 `/usr/local/etc/xray/config.json`，也可通过启动参数指定：
+
+```bash
+ADMIN_TOKEN=your-secret-token go run ./cmd/server --xray_config_path=/opt/xray/config.json
+```
+
+可选：指定运行时数据目录（默认 `data`）
+
+```bash
+ADMIN_TOKEN=your-secret-token DATA_DIR=/opt/subscriptionlink/data go run ./cmd/server
+```
+
+也可使用启动参数（优先推荐）：
+
+```bash
+ADMIN_TOKEN=your-secret-token go run ./cmd/server --data_dir=/opt/subscriptionlink/data
 ```
 
 可选：自定义监听地址（默认 `127.0.0.1:8081`）

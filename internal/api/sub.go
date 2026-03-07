@@ -47,7 +47,7 @@ func SubHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "no available nodes", http.StatusServiceUnavailable)
 			return
 		}
-		templateBytes, err := os.ReadFile("data/clash.yaml")
+		templateBytes, err := os.ReadFile(store.DataFile("clash.yaml"))
 		if err != nil {
 			http.Error(w, "clash template not found", http.StatusServiceUnavailable)
 			return

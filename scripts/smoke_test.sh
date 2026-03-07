@@ -8,8 +8,9 @@ LISTEN_ADDR="${LISTEN_ADDR:-127.0.0.1:18081}"
 BASE_URL="${BASE_URL:-http://$LISTEN_ADDR}"
 ADMIN_TOKEN="${ADMIN_TOKEN:-smoke-admin-token}"
 GOCACHE_DIR="${GOCACHE_DIR:-$ROOT_DIR/.gocache}"
-USER_FILE="data/users.json"
-NODE_FILE="data/nodes.json"
+DATA_DIR="${DATA_DIR:-data}"
+USER_FILE="$DATA_DIR/users.json"
+NODE_FILE="$DATA_DIR/nodes.json"
 COOKIE_JAR="$(mktemp)"
 
 for cmd in go curl base64; do
@@ -19,7 +20,7 @@ for cmd in go curl base64; do
   fi
 done
 
-mkdir -p data
+mkdir -p "$DATA_DIR"
 mkdir -p "$GOCACHE_DIR"
 USER_BAK="$(mktemp)"
 NODE_BAK="$(mktemp)"
@@ -47,7 +48,7 @@ if curl -sS "$BASE_URL/" >/dev/null 2>&1; then
   exit 1
 fi
 
-ADMIN_TOKEN="$ADMIN_TOKEN" LISTEN_ADDR="$LISTEN_ADDR" GOCACHE="$GOCACHE_DIR" go run ./cmd/server >/tmp/subscriptionlink-smoke.log 2>&1 &
+ADMIN_TOKEN="$ADMIN_TOKEN" DATA_DIR="$DATA_DIR" LISTEN_ADDR="$LISTEN_ADDR" GOCACHE="$GOCACHE_DIR" go run ./cmd/server >/tmp/subscriptionlink-smoke.log 2>&1 &
 SERVER_PID=$!
 
 sleep 0.2

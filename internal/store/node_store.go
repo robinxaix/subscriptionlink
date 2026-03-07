@@ -7,7 +7,7 @@ import (
 )
 
 func LoadNodes() []model.Node {
-	data, _ := os.ReadFile("data/nodes.json")
+	data, _ := os.ReadFile(DataFile("nodes.json"))
 	var nodes []model.Node
 	json.Unmarshal(data, &nodes)
 	if nodes == nil {
@@ -18,5 +18,5 @@ func LoadNodes() []model.Node {
 
 func SaveNodes(nodes []model.Node) {
 	data, _ := json.MarshalIndent(nodes, "", "  ")
-	os.WriteFile("data/nodes.json", data, 0644)
+	os.WriteFile(DataFile("nodes.json"), data, 0644)
 }
