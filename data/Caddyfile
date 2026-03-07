@@ -1,0 +1,33 @@
+{
+        acme_ca https://acme-v02.api.letsencrypt.org/directory
+}
+
+http://xxx.yyy.zzz, http://www.yyy.zzz {
+        redir https://{host}{uri} permanent
+}
+
+xxx.yyy.zzz, www.yyy.zzz {
+        encode gzip zstd
+
+        log {
+                output file /var/log/caddy/access.log
+        }
+
+        route {
+                @sub path /api/*
+                handle @sub {
+                    reverse_proxy 127.0.0.1:8081
+                }
+
+                @xhttp path /xhttp*
+                handle @xhttp {
+                        reverse_proxy 127.0.0.1:1234
+                }
+
+                handle {
+                        root * /usr/local/etc/xray
+                        try_files {path} /index.html
+                        file_server
+                }
+        }
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Subscription Server</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 24px; }
+    input, select, button { padding: 8px; margin-right: 8px; }
+    a { word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h2>Subscription Server</h2>
+  <p>请输入 token 获取订阅</p>
+  <select id="format">
+    <option value="subscription">Subscription</option>
+    <option value="v2ray">V2Ray</option>
+    <option value="singbox">Sing-box</option>
+  </select>
+  <input id="token" placeholder="token" />
+  <button onclick="build()">生成链接</button>
+  <p><a id="link" target="_blank"></a></p>
+
+  <script>
+    function build() {
+      const format = document.getElementById('format').value;
+      const token = document.getElementById('token').value.trim();
+      const url = '/api/' + format + '/' + encodeURIComponent(token);
+      const a = document.getElementById('link');
+      a.href = url;
+      a.textContent = location.origin + url;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+mode: rule
+ipv6: true
+
+# ---------- GEO 数据库 ----------
+geodata-mode: true
+geodata-loader: standard
+geo-auto-update: true
+geo-update-interval: 24 # 单位: 小时
+geox-url:
+  geoip: https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat
+  geosite: https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat
+  mmdb: https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb
+  asn: https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb
+
+# ---------- DNS ----------
+dns:
+  enable: true
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  # fake-ip 白名单（局域网 / 直连域名不走 fake-ip）
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - localhost.ptlogin2.qq.com
+  nameserver:
+    - 223.5.5.5 # 阿里 DNS（国内首选）
+    - 119.29.29.29 # 腾讯 DNS
+  fallback:
+    - https://1.1.1.1/dns-query # Cloudflare DoH（走代理）
+    - https://8.8.8.8/dns-query # Google DoH（走代理）
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+
+# ============================================================
+# 代理节点
+# ============================================================
+proxies:
+  - name: {{NODE_NAME}}
+    type: vless
+    server: {{SERVER}}
+    port: {{PORT}}
+    uuid: {{UUID}}
+    network: {{NETWORK}}
+    tls: {{TLS}}
+    udp: true
+    ws-opts:
+      path: {{PATH}}
+      headers:
+        Host: {{SERVER}}
+
+# ============================================================
+# 代理组
+# ============================================================
+proxy-groups:
+  # 主选择组 —— 手动切换节点
+  - name: PROXY
+    type: select
+    proxies:
+      - {{NODE_NAME}}
+      - DIRECT # 备用直连
+
+  # 兜底组（可选）—— 按延迟自动选择
+  - name: AUTO
+    type: url-test
+    proxies:
+      - {{NODE_NAME}}
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+# ============================================================
+# 分流规则  （顺序：精确域名 → 关键词 → GeoSite → GeoIP → 兜底）
+# ============================================================
+rules:
+  # ------- 强制直连：内网 / 私有服务 -------
+  - DOMAIN-SUFFIX,quantaai.top,DIRECT
+  - DOMAIN-SUFFIX,svc.cluster.local,DIRECT
+  - DOMAIN-SUFFIX,anyrouter.top,DIRECT
+
+  # ------- 强制直连：微信 / WeChat -------
+  - DOMAIN-SUFFIX,qq.com,DIRECT
+  - DOMAIN-SUFFIX,weixinbridge.com,DIRECT
+  - DOMAIN-SUFFIX,servicewechat.com,DIRECT
+
+  # ------- 强制直连：国内常用服务 -------
+  - DOMAIN-SUFFIX,tencent.com,DIRECT
+  - DOMAIN-SUFFIX,icloud.com,DIRECT
+  - DOMAIN-SUFFIX,microsoft.com,DIRECT
+  - DOMAIN-SUFFIX,bing.com,DIRECT
+  - DOMAIN-SUFFIX,qwen.ai,DIRECT
+  - DOMAIN-SUFFIX,deepseek.com,DIRECT
+  - DOMAIN-SUFFIX,minimaxi.com,DIRECT
+  - DOMAIN-SUFFIX,alicdn.com,DIRECT
+  - DOMAIN-SUFFIX,taobao.com,DIRECT
+  - DOMAIN-SUFFIX,aliyun.com,DIRECT
+  - DOMAIN-SUFFIX,cloudwego.io,DIRECT
+  - DOMAIN-SUFFIX,gitee.com,DIRECT
+  - DOMAIN-SUFFIX,dingtalkapps.com,DIRECT
+
+  # ------- 强制直连：TalkLingo CDN -------
+  - DOMAIN-SUFFIX,cdntest.talklingoai.com,DIRECT
+  - DOMAIN-SUFFIX,cdn.talklingoai.com,DIRECT
+
+  # ------- 代理：AI 工具 -------
+  - DOMAIN-SUFFIX,openai.com,PROXY
+  - DOMAIN-SUFFIX,chatgpt.com,PROXY
+  - DOMAIN-SUFFIX,oaiusercontent.com,PROXY
+  - DOMAIN-SUFFIX,anthropic.com,PROXY
+  - DOMAIN-SUFFIX,cursor.sh,PROXY
+  - DOMAIN-SUFFIX,windsurf.com,PROXY
+  - DOMAIN-SUFFIX,codeium.com,PROXY
+  - DOMAIN-SUFFIX,forgecode.dev,PROXY
+  - DOMAIN-SUFFIX,perplexity.ai,PROXY
+  - DOMAIN-SUFFIX,genspark.ai,PROXY
+  - DOMAIN-SUFFIX,huggingface.co,PROXY
+  - DOMAIN-SUFFIX,skywork.ai,PROXY
+  - DOMAIN-SUFFIX,deepai.org,PROXY
+  - DOMAIN-SUFFIX,talkai.info,PROXY
+  - DOMAIN-SUFFIX,maxai.co,PROXY
+  - DOMAIN-SUFFIX,ai.dev,PROXY
+  - DOMAIN-SUFFIX,llm.zed.dev,PROXY
+  - DOMAIN-SUFFIX,sbert.net,PROXY
+
+  # ------- 代理：Google 全家桶 -------
+  - DOMAIN-SUFFIX,google.com,PROXY
+  - DOMAIN-SUFFIX,googleapis.com,PROXY
+  - DOMAIN-SUFFIX,googleusercontent.com,PROXY
+  - DOMAIN-SUFFIX,usercontent.goog,PROXY
+  - DOMAIN-SUFFIX,googleadservices.com,PROXY
+  - DOMAIN-SUFFIX,appspot.com,PROXY
+  - DOMAIN-SUFFIX,g.co,PROXY
+  - DOMAIN-KEYWORD,google,PROXY
+
+  # ------- 代理：开发工具 -------
+  - DOMAIN-SUFFIX,github.com,PROXY
+  - DOMAIN-SUFFIX,github.io,PROXY
+  - DOMAIN-SUFFIX,githubusercontent.com,PROXY
+  - DOMAIN-SUFFIX,gcr.io,PROXY
+  - DOMAIN-SUFFIX,docker.io,PROXY
+  - DOMAIN-SUFFIX,docker.com,PROXY
+  - DOMAIN-SUFFIX,golang.org,PROXY
+  - DOMAIN-SUFFIX,flutter.dev,PROXY
+  - DOMAIN-SUFFIX,grpc.io,PROXY
+  - DOMAIN-SUFFIX,json-schema.org,PROXY
+  - DOMAIN-SUFFIX,jsdelivr.net,PROXY
+  - DOMAIN-SUFFIX,vercel.app,PROXY
+
+  # ------- 代理：云服务 -------
+  - DOMAIN-SUFFIX,amazonaws.com,PROXY
+  - DOMAIN-SUFFIX,cloudflare.com,PROXY
+  - DOMAIN-SUFFIX,singapore.rds.aliyuncs.com,PROXY
+
+  # ------- 代理：社交媒体 -------
+  - DOMAIN-SUFFIX,twitter.com,PROXY
+  - DOMAIN-SUFFIX,x.com,PROXY
+  - DOMAIN-SUFFIX,t.co,PROXY
+  - DOMAIN-SUFFIX,instagram.com,PROXY
+  - DOMAIN-SUFFIX,facebook.com,PROXY
+  - DOMAIN-SUFFIX,whatsapp.net,PROXY
+  - DOMAIN-SUFFIX,telegram.org,PROXY
+  - DOMAIN-SUFFIX,t.me,PROXY
+  - DOMAIN-SUFFIX,discord.com,PROXY
+  - DOMAIN-SUFFIX,discord.gg,PROXY
+  - DOMAIN-SUFFIX,discordapp.net,PROXY
+  - DOMAIN-SUFFIX,reddit.com,PROXY
+  - DOMAIN-SUFFIX,linkedin.com,PROXY
+  - DOMAIN-SUFFIX,pinterest.com,PROXY
+  - DOMAIN-SUFFIX,quora.com,PROXY
+  - DOMAIN-SUFFIX,medium.com,PROXY
+  - DOMAIN-SUFFIX,tiktok.com,PROXY
+  - DOMAIN-SUFFIX,byteoversea.com,PROXY
+
+  # ------- 代理：视频 / 音乐 -------
+  - DOMAIN-SUFFIX,youtube.com,PROXY
+  - DOMAIN-SUFFIX,youtu.be,PROXY
+  - DOMAIN-SUFFIX,soundcloud.com,PROXY
+  - DOMAIN-SUFFIX,sndcdn.com,PROXY
+
+  # ------- 代理：其他 -------
+  - DOMAIN-SUFFIX,talklingoai.com,PROXY
+  - DOMAIN-SUFFIX,wikipedia.org,PROXY
+  - DOMAIN-SUFFIX,v2ex.com,PROXY
+  - DOMAIN-SUFFIX,ycombinator.com,PROXY
+  - DOMAIN-SUFFIX,archive.org,PROXY
+  - DOMAIN-SUFFIX,loc.gov,PROXY
+  - DOMAIN-SUFFIX,msecnd.net,PROXY
+  - DOMAIN-SUFFIX,intercom.io,PROXY
+  - DOMAIN-SUFFIX,hcaptcha.com,PROXY
+  - DOMAIN-SUFFIX,communityinviter.com,PROXY
+  - DOMAIN-SUFFIX,mozilla.cloudflare-dns.com,PROXY
+  - DOMAIN-SUFFIX,vivaldi.com,PROXY
+  - DOMAIN-SUFFIX,pytube.io,PROXY
+  - DOMAIN-SUFFIX,cash.app,PROXY
+  - DOMAIN-SUFFIX,czyt.tech,PROXY
+  - DOMAIN-SUFFIX,dinq.io,PROXY
+  - DOMAIN-SUFFIX,carobook.com,PROXY
+  - DOMAIN-SUFFIX,putpan.com,PROXY
+  - DOMAIN-SUFFIX,sbc.io,PROXY
+
+  # ------- 代理：特定 IP -------
+  - IP-CIDR,8.8.8.8/32,PROXY,no-resolve
+  - IP-CIDR,1.1.1.1/32,PROXY,no-resolve
+  - IP-CIDR,47.236.246.229/32,PROXY,no-resolve
+
+  # ------- GeoSite / GeoIP 兜底 -------
+  - GEOSITE,CN,DIRECT
+  - GEOIP,CN,DIRECT,no-resolve
+
+  # ------- 最终兜底：未匹配流量走代理 -------
+  - MATCH,PROXY
