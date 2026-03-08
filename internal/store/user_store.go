@@ -24,6 +24,7 @@ func SaveUsers(users []model.User) {
 // MergeUsers merges xray clients into existing users
 // Users with matching UUID are preserved, new clients from xray are added
 // Email from xray config is merged if existing user has no email
+// Token is generated if existing user has no token
 func MergeUsers(existingUsers, xrayUsers []model.User) []model.User {
 	existingByUUID := make(map[string]model.User)
 	for _, u := range existingUsers {
@@ -43,9 +44,12 @@ func MergeUsers(existingUsers, xrayUsers []model.User) []model.User {
 		seen[xu.UUID] = true
 
 		if eu, ok := existingByUUID[xu.UUID]; ok {
-			// Use existing user data but merge email from xray if missing
+			// Use existing user data but merge missing fields from xray
 			if eu.Email == "" && xu.Email != "" {
 				eu.Email = xu.Email
+			}
+			if eu.Token == "" && xu.Token != "" {
+				eu.Token = xu.Token
 			}
 			result = append(result, eu)
 		} else {
