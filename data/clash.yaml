@@ -61,25 +61,13 @@ proxy-groups:
     type: select
     proxies:
       - {{NODE_NAME}}
-      - DIRECT # 备用直连
-
-  # 兜底组（可选）—— 按延迟自动选择
-  - name: AUTO
-    type: url-test
-    proxies:
-      - {{NODE_NAME}}
-    url: http://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
 
 # ============================================================
 # 分流规则  （顺序：精确域名 → 关键词 → GeoSite → GeoIP → 兜底）
 # ============================================================
 rules:
   # ------- 强制直连：内网 / 私有服务 -------
-  - DOMAIN-SUFFIX,quantaai.top,DIRECT
   - DOMAIN-SUFFIX,svc.cluster.local,DIRECT
-  - DOMAIN-SUFFIX,anyrouter.top,DIRECT
 
   # ------- 强制直连：微信 / WeChat -------
   - DOMAIN-SUFFIX,qq.com,DIRECT
@@ -101,27 +89,13 @@ rules:
   - DOMAIN-SUFFIX,gitee.com,DIRECT
   - DOMAIN-SUFFIX,dingtalkapps.com,DIRECT
 
-  # ------- 强制直连：TalkLingo CDN -------
-  - DOMAIN-SUFFIX,cdntest.talklingoai.com,DIRECT
-  - DOMAIN-SUFFIX,cdn.talklingoai.com,DIRECT
-
   # ------- 代理：AI 工具 -------
   - DOMAIN-SUFFIX,openai.com,PROXY
   - DOMAIN-SUFFIX,chatgpt.com,PROXY
   - DOMAIN-SUFFIX,oaiusercontent.com,PROXY
   - DOMAIN-SUFFIX,anthropic.com,PROXY
-  - DOMAIN-SUFFIX,cursor.sh,PROXY
-  - DOMAIN-SUFFIX,windsurf.com,PROXY
-  - DOMAIN-SUFFIX,codeium.com,PROXY
   - DOMAIN-SUFFIX,forgecode.dev,PROXY
-  - DOMAIN-SUFFIX,perplexity.ai,PROXY
-  - DOMAIN-SUFFIX,genspark.ai,PROXY
   - DOMAIN-SUFFIX,huggingface.co,PROXY
-  - DOMAIN-SUFFIX,skywork.ai,PROXY
-  - DOMAIN-SUFFIX,deepai.org,PROXY
-  - DOMAIN-SUFFIX,talkai.info,PROXY
-  - DOMAIN-SUFFIX,maxai.co,PROXY
-  - DOMAIN-SUFFIX,ai.dev,PROXY
   - DOMAIN-SUFFIX,llm.zed.dev,PROXY
   - DOMAIN-SUFFIX,sbert.net,PROXY
 
@@ -152,7 +126,6 @@ rules:
   # ------- 代理：云服务 -------
   - DOMAIN-SUFFIX,amazonaws.com,PROXY
   - DOMAIN-SUFFIX,cloudflare.com,PROXY
-  - DOMAIN-SUFFIX,singapore.rds.aliyuncs.com,PROXY
 
   # ------- 代理：社交媒体 -------
   - DOMAIN-SUFFIX,twitter.com,PROXY
@@ -177,34 +150,15 @@ rules:
   # ------- 代理：视频 / 音乐 -------
   - DOMAIN-SUFFIX,youtube.com,PROXY
   - DOMAIN-SUFFIX,youtu.be,PROXY
-  - DOMAIN-SUFFIX,soundcloud.com,PROXY
-  - DOMAIN-SUFFIX,sndcdn.com,PROXY
 
   # ------- 代理：其他 -------
-  - DOMAIN-SUFFIX,talklingoai.com,PROXY
   - DOMAIN-SUFFIX,wikipedia.org,PROXY
   - DOMAIN-SUFFIX,v2ex.com,PROXY
-  - DOMAIN-SUFFIX,ycombinator.com,PROXY
-  - DOMAIN-SUFFIX,archive.org,PROXY
-  - DOMAIN-SUFFIX,loc.gov,PROXY
-  - DOMAIN-SUFFIX,msecnd.net,PROXY
-  - DOMAIN-SUFFIX,intercom.io,PROXY
-  - DOMAIN-SUFFIX,hcaptcha.com,PROXY
-  - DOMAIN-SUFFIX,communityinviter.com,PROXY
-  - DOMAIN-SUFFIX,mozilla.cloudflare-dns.com,PROXY
   - DOMAIN-SUFFIX,vivaldi.com,PROXY
-  - DOMAIN-SUFFIX,pytube.io,PROXY
-  - DOMAIN-SUFFIX,cash.app,PROXY
-  - DOMAIN-SUFFIX,czyt.tech,PROXY
-  - DOMAIN-SUFFIX,dinq.io,PROXY
-  - DOMAIN-SUFFIX,carobook.com,PROXY
-  - DOMAIN-SUFFIX,putpan.com,PROXY
-  - DOMAIN-SUFFIX,sbc.io,PROXY
 
   # ------- 代理：特定 IP -------
   - IP-CIDR,8.8.8.8/32,PROXY,no-resolve
   - IP-CIDR,1.1.1.1/32,PROXY,no-resolve
-  - IP-CIDR,47.236.246.229/32,PROXY,no-resolve
 
   # ------- GeoSite / GeoIP 兜底 -------
   - GEOSITE,CN,DIRECT

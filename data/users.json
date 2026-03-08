@@ -1,16 +1,1 @@
-[
-  {
-    "name": "1@example.com",
-    "email": "1@example.com",
-    "token": "811dc0755f17c9a34759a72909c3e709",
-    "uuid": "22b0487879ddb86054166411998aa410",
-    "expire": 0
-  },
-  {
-    "name": "2@example.com",
-    "email": "2@example.com",
-    "token": "ef3ab896fbfaa5d28ce90d7392923ba5",
-    "uuid": "4bafe0a7900b036dc603002183e87857",
-    "expire": 0
-  }
-]
+[]

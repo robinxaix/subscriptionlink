@@ -108,6 +108,70 @@ ADMIN_TOKEN=your-secret-token LISTEN_ADDR=127.0.0.1:18081 go run ./cmd/server
 
 说明：服务当前监听 `127.0.0.1:8081`。
 
+## Linux 一键部署
+
+适用于在 Linux 服务器上以 `systemd` 管理 `xray`、`subscriptionlink`、`caddy` 的部署场景。
+
+脚本位置：
+
+```bash
+./scripts/deploy_linux.sh
+```
+
+执行方式：
+
+```bash
+sudo ./scripts/deploy_linux.sh
+```
+
+或直接传入域名：
+
+```bash
+sudo ./scripts/deploy_linux.sh example.com
+```
+
+也支持显式参数：
+
+```bash
+sudo ./scripts/deploy_linux.sh --domain example.com --yes
+```
+
+脚本会自动完成以下动作：
+
+- 检查并安装 `caddy`
+- 检查并安装 `xray`
+- 使用 `data/Caddyfile` 生成 `/etc/caddy/Caddyfile`
+- 使用 `data/xray.config` 生成 `/usr/local/etc/xray/config.json`
+- 构建并安装 `/usr/local/bin/subscriptionlink`
+- 初始化 `/usr/local/etc/subscriptionlink`
+- 写入或补齐 `systemd` 服务
+- 依次启动 `xray -> subscriptionlink -> caddy`
+- 最终输出 `/usr/local/etc/subscriptionlink/admin.key`
+
+卸载脚本：
+
+```bash
+sudo ./scripts/uninstall_linux.sh
+```
+
+默认只移除 `subscriptionlink` 本体和由部署脚本创建的 `caddy/xray` systemd 单元，不会卸载系统里的 `caddy/xray` 包，也不会删除运行数据。若要彻底清理：
+
+```bash
+sudo ./scripts/uninstall_linux.sh --full-clean --yes
+```
+
+重装脚本：
+
+```bash
+sudo ./scripts/reinstall_linux.sh --domain example.com --yes
+```
+
+默认保留 `/usr/local/etc/subscriptionlink` 里的运行数据；若要先清空再重装：
+
+```bash
+sudo ./scripts/reinstall_linux.sh --domain example.com --full-clean --yes
+```
+
 ## 本地冒烟测试
 
 ```bash
@@ -142,6 +206,31 @@ make build PLATFORM=linux/amd64,windows/amd64,darwin/arm64
 ```bash
 make clean
 ```
+
+## Release 打包
+
+本地生成指定平台的 release 安装包：
+
+```bash
+./scripts/package_release.sh --target linux/amd64 --version v1.0.0
+```
+
+支持的目标格式为 `OS/ARCH`，例如：
+
+```bash
+./scripts/package_release.sh --target linux/arm64 --version v1.0.0
+./scripts/package_release.sh --target darwin/arm64 --version v1.0.0
+./scripts/package_release.sh --target windows/amd64 --version v1.0.0
+```
+
+输出目录默认为 `release/`，每个安装包包含：
+
+- `bin/`：对应平台的预编译二进制
+- `data/`：部署所需模板文件
+- `scripts/`：部署、卸载、重装脚本
+- `INSTALL.md`：安装说明
+
+推送 `v*` 标签后，GitHub Actions 会自动构建并发布这些安装包到 GitHub Release。
 
 ## 数据模型
 

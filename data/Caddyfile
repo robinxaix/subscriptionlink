@@ -2,11 +2,11 @@
         acme_ca https://acme-v02.api.letsencrypt.org/directory
 }
 
-http://xxx.yyy.zzz, http://www.yyy.zzz {
+http://xxx.yyy.zzz {
         redir https://{host}{uri} permanent
 }
 
-xxx.yyy.zzz, www.yyy.zzz {
+xxx.yyy.zzz {
         encode gzip zstd
 
         log {
@@ -30,9 +30,7 @@ xxx.yyy.zzz, www.yyy.zzz {
                 }
 
                 handle {
-                        root * /usr/local/etc/xray
-                        try_files {path} /index.html
-                        file_server
+                        respond "hello world!" 200
                 }
         }
 }
