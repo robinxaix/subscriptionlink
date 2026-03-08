@@ -14,6 +14,11 @@ xxx.yyy.zzz, www.yyy.zzz {
         }
 
         route {
+                handle /admin {
+                        rewrite * /admin.html
+                        reverse_proxy 127.0.0.1:8081
+                }
+
                 @sub path /api/*
                 handle @sub {
                     reverse_proxy 127.0.0.1:8081

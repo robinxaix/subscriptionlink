@@ -34,3 +34,5 @@ dist
 
 .gocache
 *.key
+server
+admin.key

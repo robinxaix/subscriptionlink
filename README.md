@@ -350,7 +350,7 @@ curl "$BASE/api/subscription/<user-token>"
 - 如果 `xray.config` 的 inbound 没有 `tag` 字段，不要设置 `XRAY_INBOUND_TAG`。
 - 若设置了 `XRAY_INBOUND_TAG`，必须与 inbound 的 `tag` 完全一致，否则会报：
   `sync xray failed: xray inbound tag not found: <tag>`
-- `XRAY_RELOAD_CMD` 未设置时，默认执行：`sudo systemctl reload xray`
+- `XRAY_RELOAD_CMD` 未设置时，默认执行：`sudo systemctl restart xray`
 - 若你不希望自动重载，可显式设置：`XRAY_RELOAD_CMD=""`
 
 ## 启动参数与环境变量

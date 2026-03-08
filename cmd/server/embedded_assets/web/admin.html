@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Subscription Server Admin</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 24px; max-width: 1000px; }
+    h1, h2 { margin-bottom: 8px; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+    input { margin-right: 8px; margin-bottom: 8px; padding: 6px; }
+    button { padding: 6px 10px; }
+    code { background: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+    .hidden { display: none; }
+    .error { color: #b00020; margin-top: 8px; }
+    .ok { color: #0a7f2e; }
+  </style>
+</head>
+<body>
+  <div id="loginView">
+    <h1>Admin Login</h1>
+    <section>
+      <h2>请输入管理密钥</h2>
+      <input id="loginToken" type="password" placeholder="ADMIN_TOKEN" />
+      <button onclick="login()">登录</button>
+      <p id="loginMsg" class="error hidden"></p>
+    </section>
+  </div>
+
+  <div id="appView" class="hidden">
+    <h1>Subscription Server Admin</h1>
+    <section>
+      <span class="ok">已登录</span>
+      <button onclick="logout()">退出登录</button>
+    </section>
+
+    <section>
+      <h2>用户管理</h2>
+      <div>
+        <input id="uName" placeholder="name" />
+        <input id="uEmail" placeholder="email(可选)" />
+        <input id="uUUID" placeholder="uuid(可选)" />
+        <input id="uExpire" placeholder="expire unix(可选)" />
+        <button onclick="addUser()">新增用户</button>
+      </div>
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Token</th><th>UUID</th><th>Expire</th><th>订阅</th><th>操作</th></tr></thead>
+        <tbody id="userRows"></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>节点管理</h2>
+      <div>
+        <input id="nName" placeholder="name" />
+        <input id="nServer" placeholder="server" />
+        <input id="nPort" placeholder="port" type="number" />
+        <button onclick="addNode()">新增节点</button>
+      </div>
+      <table>
+        <thead><tr><th>Name</th><th>Server</th><th>Port</th><th>操作</th></tr></thead>
+        <tbody id="nodeRows"></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>访问统计</h2>
+      <pre id="stats">loading...</pre>
+    </section>
+  </div>
+
+  <script>
+    let csrfToken = '';
+
+    function showLogin(message) {
+      document.getElementById('loginView').classList.remove('hidden');
+      document.getElementById('appView').classList.add('hidden');
+      const msg = document.getElementById('loginMsg');
+      if (message) {
+        msg.textContent = message;
+        msg.classList.remove('hidden');
+      } else {
+        msg.textContent = '';
+        msg.classList.add('hidden');
+      }
+      document.getElementById('loginToken').value = '';
+      csrfToken = '';
+    }
+
+    function showApp() {
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('appView').classList.remove('hidden');
+    }
+
+    async function fetchJSON(url, options = {}) {
+      const res = await fetch(url, {
+        credentials: 'same-origin',
+        ...options,
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(text || res.statusText);
+      }
+      return text ? JSON.parse(text) : null;
+    }
+
+    async function login() {
+      const token = document.getElementById('loginToken').value.trim();
+      if (!token) {
+        showLogin('请输入 ADMIN_TOKEN');
+        return;
+      }
+
+      try {
+        const data = await fetchJSON('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        csrfToken = (data && data.csrf_token) || '';
+        if (!csrfToken) throw new Error('missing csrf token');
+        showApp();
+        await refreshAll();
+      } catch (err) {
+        showLogin('登录失败，请检查密钥');
+      }
+    }
+
+    async function logout() {
+      try {
+        await fetch('/api/admin/logout', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
+        });
+      } catch (_) {}
+      showLogin('');
+    }
+
+    function writeHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken,
+      };
+    }
+
+    async function loadUsers() {
+      const users = await fetchJSON('/api/admin/users');
+      const userList = Array.isArray(users) ? users : [];
+      const rows = document.getElementById('userRows');
+      rows.innerHTML = userList.map(u => `
+        <tr>
+          <td>${u.name}</td>
+          <td>${u.email || ''}</td>
+          <td><code>${u.token}</code></td>
+          <td>${u.uuid}</td>
+          <td>${u.expire || ''}</td>
+          <td>
+            <div><a href="/api/subscription/${u.token}" target="_blank">Subscription</a></div>
+            <div><a href="/api/v2ray/${u.token}" target="_blank">V2Ray</a></div>
+            <div><a href="/api/singbox/${u.token}" target="_blank">Sing-box</a></div>
+          </td>
+          <td><button onclick="delUser('${u.token}')">删除</button></td>
+        </tr>`).join('');
+    }
+
+    async function loadNodes() {
+      const nodes = await fetchJSON('/api/admin/nodes');
+      const nodeList = Array.isArray(nodes) ? nodes : [];
+      const rows = document.getElementById('nodeRows');
+      rows.innerHTML = nodeList.map(n => `
+        <tr>
+          <td>${n.name}</td>
+          <td>${n.server}</td>
+          <td>${n.port}</td>
+          <td><button onclick="delNode('${n.name}')">删除</button></td>
+        </tr>`).join('');
+    }
+
+    async function loadStats() {
+      const s = await fetchJSON('/api/admin/stats');
+      document.getElementById('stats').textContent = JSON.stringify(s, null, 2);
+    }
+
+    async function addUser() {
+      const body = {
+        name: document.getElementById('uName').value,
+        email: document.getElementById('uEmail').value,
+        uuid: document.getElementById('uUUID').value,
+        expire: Number(document.getElementById('uExpire').value || 0)
+      };
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: writeHeaders(),
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) return alert(await res.text());
+      document.getElementById('uName').value = '';
+      document.getElementById('uEmail').value = '';
+      document.getElementById('uUUID').value = '';
+      document.getElementById('uExpire').value = '';
+      await refreshAll();
+    }
+
+    async function delUser(token) {
+      const res = await fetch('/api/admin/users?token=' + encodeURIComponent(token), {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { 'X-CSRF-Token': csrfToken }
+      });
+      if (!res.ok) return alert(await res.text());
+      await refreshAll();
+    }
+
+    async function addNode() {
+      const body = {
+        name: document.getElementById('nName').value,
+        server: document.getElementById('nServer').value,
+        port: Number(document.getElementById('nPort').value)
+      };
+      const res = await fetch('/api/admin/nodes', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: writeHeaders(),
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) return alert(await res.text());
+      document.getElementById('nName').value = '';
+      document.getElementById('nServer').value = '';
+      document.getElementById('nPort').value = '';
+      await refreshAll();
+    }
+
+    async function delNode(name) {
+      const res = await fetch('/api/admin/nodes?name=' + encodeURIComponent(name), {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { 'X-CSRF-Token': csrfToken }
+      });
+      if (!res.ok) return alert(await res.text());
+      await refreshAll();
+    }
+
+    async function refreshAll() {
+      try {
+        await Promise.all([loadUsers(), loadNodes(), loadStats()]);
+      } catch (err) {
+        const msg = err && err.message ? err.message : String(err);
+        if (msg.includes('unauthorized') || msg.includes('forbidden')) {
+          showLogin('登录已失效，请重新输入 ADMIN_TOKEN');
+          return;
+        }
+        alert('加载失败: ' + msg);
+      }
+    }
+
+    showLogin('');
+    fetch('/api/admin/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+    }).catch(() => {});
+
+    setInterval(() => {
+      if (!document.getElementById('appView').classList.contains('hidden')) {
+        loadStats().catch(() => {});
+      }
+    }, 5000);
+  </script>
+</body>
+</html>

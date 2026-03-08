@@ -14,6 +14,7 @@ import (
 	"subscriptionlink/internal/auth"
 	"subscriptionlink/internal/stats"
 	"subscriptionlink/internal/store"
+	"subscriptionlink/internal/xray"
 
 	"embed"
 )
@@ -31,6 +32,7 @@ func embeddedAssetsHandler() http.Handler {
 
 		data, err := webAssets.ReadFile("embedded_assets/web/" + path)
 		if err != nil {
+			fmt.Printf("Error reading embedded_assets/web/%s: %v\n", path, err)
 			http.NotFound(w, r)
 			return
 		}
@@ -84,6 +86,21 @@ func main() {
 		fmt.Printf("failed to set XRAY_CONFIG_PATH: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Load existing users from users.json
+	existingUsers := store.LoadUsers()
+
+	// Load clients from xray config and merge
+	xrayUsers, err := xray.LoadClientsFromConfig()
+	if err != nil {
+		fmt.Printf("warning: failed to load xray clients: %v\n", err)
+	}
+	if len(xrayUsers) > 0 {
+		mergedUsers := store.MergeUsers(existingUsers, xrayUsers)
+		store.SaveUsers(mergedUsers)
+		fmt.Printf("Loaded %d clients from xray config, total %d users\n", len(xrayUsers), len(mergedUsers))
+	}
+
 	resolvedToken, generated, err := resolveAdminToken(adminToken)
 	if err != nil {
 		fmt.Printf("failed to resolve admin token: %v\n", err)
