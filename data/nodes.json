@@ -1,12 +1,1 @@
-[
-  {
-    "name": "12",
-    "server": "we.xx.ss",
-    "port": 443,
-    "protocol": "vless",
-    "network": "ws",
-    "security": "none",
-    "path": "/xhttp",
-    "host": ""
-  }
-]
+[]

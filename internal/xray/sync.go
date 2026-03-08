@@ -1,6 +1,8 @@
 package xray
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -105,10 +107,18 @@ func extractClientsFromInbound(inbound map[string]interface{}, seen map[string]b
 			Name:  name,
 			Email: email,
 			UUID:  id,
+			Token: generateToken(),
 		})
 	}
 
 	return users
+}
+
+// generateToken generates a random 32-character hex token
+func generateToken() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 func SyncUsers(users []model.User) error {
