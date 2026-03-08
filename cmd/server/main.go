@@ -14,7 +14,52 @@ import (
 	"subscriptionlink/internal/auth"
 	"subscriptionlink/internal/stats"
 	"subscriptionlink/internal/store"
+
+	"embed"
 )
+
+//go:embed embedded_assets/web
+var webAssets embed.FS
+
+func embeddedAssetsHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if path == "" || path == "index.html" {
+			http.NotFound(w, r)
+			return
+		}
+
+		data, err := webAssets.ReadFile("embedded_assets/web/" + path)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		contentType := mimeType(path)
+		w.Header().Set("Content-Type", contentType)
+		w.Write(data)
+	})
+}
+
+func mimeType(path string) string {
+	switch {
+	case strings.HasSuffix(path, ".html"):
+		return "text/html; charset=utf-8"
+	case strings.HasSuffix(path, ".css"):
+		return "text/css; charset=utf-8"
+	case strings.HasSuffix(path, ".js"):
+		return "application/javascript; charset=utf-8"
+	case strings.HasSuffix(path, ".json"):
+		return "application/json; charset=utf-8"
+	case strings.HasSuffix(path, ".png"):
+		return "image/png"
+	case strings.HasSuffix(path, ".jpg"), strings.HasSuffix(path, ".jpeg"):
+		return "image/jpeg"
+	case strings.HasSuffix(path, ".svg"):
+		return "image/svg+xml"
+	default:
+		return "text/plain; charset=utf-8"
+	}
+}
 
 type loginRequest struct {
 	Token string `json:"token"`
@@ -118,8 +163,8 @@ func main() {
 		_ = json.NewEncoder(w).Encode(stats.Get())
 	}))
 
-	fs := http.FileServer(http.Dir("./web"))
-	mux.Handle("/", fs)
+	fmt.Println("dataDir:" + *dataDirFlag)
+	mux.Handle("/", embeddedAssetsHandler())
 
 	handler := withSecurityHeaders(mux)
 

@@ -13,7 +13,7 @@ TARGET_PLATFORMS := $(if $(PLATFORM),$(subst $(comma), ,$(PLATFORM)),$(CURRENT_P
 
 .PHONY: build clean
 
-build:
+build: copy-web
 	@mkdir -p $(DIST_DIR)
 	@mkdir -p $(GOCACHE_DIR)
 	@echo "==> Target platforms: $(TARGET_PLATFORMS)"
@@ -27,5 +27,10 @@ build:
 		CGO_ENABLED=0 GOCACHE="$(GOCACHE_DIR)" GOOS=$${GOOS} GOARCH=$${GOARCH} go build -o "$${OUT}" $(MAIN_PKG) || exit $$?; \
 	done
 
+copy-web:
+	@mkdir -p $(MAIN_PKG)/embedded_assets/web
+	@cp -r web/admin.html $(MAIN_PKG)/embedded_assets/web/
+
 clean:
 	rm -rf $(DIST_DIR) $(GOCACHE_DIR)
+	rm -rf $(MAIN_PKG)/embedded_assets
