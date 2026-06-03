@@ -135,6 +135,42 @@ func TestSyncUsersNoConfigPathNoop(t *testing.T) {
 	}
 }
 
+func TestLoadClientsFromConfigHandlesShortIDWithoutEmail(t *testing.T) {
+	t.Setenv("XRAY_INBOUND_TAG", "")
+
+	configPath := writeTempConfig(t, map[string]interface{}{
+		"inbounds": []interface{}{
+			map[string]interface{}{
+				"tag":      "short-id",
+				"protocol": "vless",
+				"settings": map[string]interface{}{
+					"clients": []interface{}{
+						map[string]interface{}{"id": "abc"},
+					},
+				},
+			},
+		},
+	})
+	t.Setenv("XRAY_CONFIG_PATH", configPath)
+
+	users, err := LoadClientsFromConfig()
+	if err != nil {
+		t.Fatalf("LoadClientsFromConfig() error = %v", err)
+	}
+	if len(users) != 1 {
+		t.Fatalf("expected 1 user, got %d", len(users))
+	}
+	if users[0].Name != "abc" {
+		t.Fatalf("expected short id to be used as fallback name, got %q", users[0].Name)
+	}
+	if users[0].UUID != "abc" {
+		t.Fatalf("expected UUID to be preserved, got %q", users[0].UUID)
+	}
+	if users[0].Token == "" {
+		t.Fatalf("expected generated token")
+	}
+}
+
 func writeTempConfig(t *testing.T, cfg map[string]interface{}) string {
 	t.Helper()
 	dir := t.TempDir()

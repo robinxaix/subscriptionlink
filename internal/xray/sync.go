@@ -100,7 +100,7 @@ func extractClientsFromInbound(inbound map[string]interface{}, seen map[string]b
 		email, _ := client["email"].(string)
 		name := email
 		if name == "" {
-			name = id[:8]
+			name = fallbackNameFromID(id)
 		}
 
 		users = append(users, model.User{
@@ -119,6 +119,13 @@ func generateToken() string {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+func fallbackNameFromID(id string) string {
+	if len(id) <= 8 {
+		return id
+	}
+	return id[:8]
 }
 
 func SyncUsers(users []model.User) error {
