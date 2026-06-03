@@ -30,6 +30,7 @@ build: copy-web
 copy-web:
 	@mkdir -p $(MAIN_PKG)/embedded_assets/web
 	@cp -r web/admin.html $(MAIN_PKG)/embedded_assets/web/
+	@cp -r web/admin.js $(MAIN_PKG)/embedded_assets/web/
 
 clean:
 	rm -rf $(DIST_DIR) $(GOCACHE_DIR)

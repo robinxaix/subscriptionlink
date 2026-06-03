@@ -35,5 +35,5 @@ release
 
 .gocache
 *.key
-server
+/server
 admin.key

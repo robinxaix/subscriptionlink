@@ -400,6 +400,7 @@ build_subscriptionlink_binary() {
   log "building subscriptionlink via go build"
   mkdir -p "${PROJECT_ROOT}/cmd/server/embedded_assets/web"
   install -m 0644 "${PROJECT_ROOT}/web/admin.html" "${PROJECT_ROOT}/cmd/server/embedded_assets/web/admin.html"
+  install -m 0644 "${PROJECT_ROOT}/web/admin.js" "${PROJECT_ROOT}/cmd/server/embedded_assets/web/admin.js"
   (cd "${PROJECT_ROOT}" && CGO_ENABLED=0 go build -o "${SUB_BIN_PATH}" ./cmd/server)
 }
 
